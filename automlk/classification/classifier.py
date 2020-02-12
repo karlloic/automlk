@@ -9,19 +9,20 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import Imputer
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, train_test_split
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.pipeline import Pipeline
 
 
+# List of estimators to evaluate. Add new estimators to this dictionary
 estimators = {
     'l1': LogReg(random_state=0, penalty='l1'),
     'l2': LogReg(random_state=0),
     'svc': SVC(random_state=0),
     'rf': RandomForestClassifier(random_state=0, n_estimators=75),
     'dt': DecisionTreeClassifier(random_state=0),
-    # 'gbm': GradientBoostingClassifier(random_state=0)
+    'gbm': GradientBoostingClassifier(random_state=0)
 }
 
 scoring = ['accuracy', 'precision', 'recall', 'roc_auc']
@@ -43,6 +44,9 @@ def runclassifiers(X, y, cv=10, test_size=0.15, sampling_type=None, classifiers=
     :return:
     """
 
+    global estimators
+    global scoring
+
     def data_sampler():
         split = 0
         while split < cv:
@@ -53,9 +57,6 @@ def runclassifiers(X, y, cv=10, test_size=0.15, sampling_type=None, classifiers=
             X_resampled, y_resampled = sampler.fit_sample(X, y)
             yield (X_resampled, y_resampled)
             split += 1
-
-    global estimators
-    global scoring
 
     # Only use classifiers specified by param
     if classifiers != 'all':
@@ -89,8 +90,7 @@ def runclassifiers(X, y, cv=10, test_size=0.15, sampling_type=None, classifiers=
     # TODO Find a better way to do this
     # Display coefficients
     if print_coeff and col_names is not None:
-        X_train, X_test, y_train, y_test = get_even_trainingtestsplit(X, y,
-                                                                      percent_positive_training=1-test_size)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
         l1_coefficients = LogReg().fit(X_train, y_train).coef_
         print('L1 Coefficients')
         for i, v in enumerate(np.mean(np.asarray(l1_coefficients), axis=0)[0]):
